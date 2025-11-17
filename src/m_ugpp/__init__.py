@@ -14,6 +14,15 @@ from .interfaces import (
     WorkerJob,
     WorkerResult,
 )
+from .roles import (
+    SimpleDiscoverer,
+    SimpleEvaluator,
+    SimplePlanner,
+    SimpleWorker,
+    build_default_roles,
+    seed_mts,
+    update_mts_from_truths,
+)
 from .types import (
     Condition,
     FinalReport,
@@ -44,6 +53,10 @@ __all__ = [
     "PlanningRequest",
     "PlanningResult",
     "Priority",
+    "SimpleDiscoverer",
+    "SimpleEvaluator",
+    "SimplePlanner",
+    "SimpleWorker",
     "Source",
     "Status",
     "TaskNode",
@@ -52,6 +65,9 @@ __all__ = [
     "UGPPEngine",
     "UGPPConfig",
     "UGPPState",
+    "build_default_roles",
+    "seed_mts",
+    "update_mts_from_truths",
     "Worker",
     "WorkerJob",
     "WorkerResult",
