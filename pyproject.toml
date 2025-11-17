@@ -8,7 +8,9 @@ version = "0.1.0"
 description = "Minimal UGPP engine with runnable demo roles and CLI"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "flask>=3.0.0",
+]
 
 [project.optional-dependencies]
 dev = []
