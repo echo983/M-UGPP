@@ -5,7 +5,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Set
 
-from .types import DAG, MTS, Source, TaskNode, Truth, TruthNeed
+from .types import MTS, Source, TaskNode, Truth, TruthNeed
+from .dag import DAG
 
 
 @dataclass

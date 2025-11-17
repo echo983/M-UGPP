@@ -1,7 +1,7 @@
 """UGPP engine coordinating discovery, planning, execution, and evaluation."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from .interfaces import (
@@ -22,7 +22,7 @@ class UGPPEngine:
     planner: Planner
     worker: Worker
     evaluator: Evaluator
-    config: UGPPConfig = UGPPConfig()
+    config: UGPPConfig = field(default_factory=UGPPConfig)
 
     def run(self, goal: str, initial_mts: Optional[MTS] = None) -> FinalReport:
         mts = initial_mts or MTS()

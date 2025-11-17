@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, FrozenSet, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Callable, Dict, FrozenSet, List, Optional, Set
 
 
 class Phase(Enum):
@@ -124,5 +124,5 @@ class FinalReport:
     message: str
 
 
-# Avoid circular import issues for type checkers
-from .dag import DAG  # noqa: E402  pylint: disable=wrong-import-position
+if TYPE_CHECKING:  # pragma: no cover - imported only for type hints
+    from .dag import DAG
