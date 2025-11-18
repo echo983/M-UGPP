@@ -1,0 +1,24 @@
+{"message": "engine.start", "details": {"phase": "discovery", "goal": "Collect today's major news"}}
+{"message": "engine.start", "details": {"phase": "discovery", "goal": "Collect today's major news"}}
+{"message": "engine.discovery.round_complete", "details": {"round": 1, "added_truths": 1, "truths_total": 1}}
+{"message": "engine.discovery.sufficient", "details": {"round": 2, "confidence": 0.8, "truths": 1}}
+{"message": "engine.planning.result", "details": {"estimated_rounds": 6, "nodes": 6}}
+{"message": "engine.execution.start", "details": {"tasks": 6}}
+{"message": "engine.execution.task_complete", "details": {"round": 1, "node_id": "python-task-1", "status": "success"}}
+{"message": "engine.evaluation.report", "details": {"overall": "ok", "completed": 1, "truths": 1}}
+{"message": "engine.execution.next_round", "details": {"round": 2}}
+{"message": "engine.execution.task_complete", "details": {"round": 2, "node_id": "python-task-2", "status": "success"}}
+{"message": "engine.evaluation.report", "details": {"overall": "ok", "completed": 2, "truths": 1}}
+{"message": "engine.execution.next_round", "details": {"round": 3}}
+{"message": "engine.execution.task_complete", "details": {"round": 3, "node_id": "python-task-3", "status": "success"}}
+{"message": "engine.evaluation.report", "details": {"overall": "ok", "completed": 3, "truths": 1}}
+{"message": "engine.execution.next_round", "details": {"round": 4}}
+{"message": "engine.execution.task_complete", "details": {"round": 4, "node_id": "python-task-4", "status": "success"}}
+{"message": "engine.evaluation.report", "details": {"overall": "ok", "completed": 4, "truths": 1}}
+{"message": "engine.execution.next_round", "details": {"round": 5}}
+{"message": "engine.execution.task_complete", "details": {"round": 5, "node_id": "python-task-5", "status": "success"}}
+{"message": "engine.evaluation.report", "details": {"overall": "ok", "completed": 5, "truths": 1}}
+{"message": "engine.execution.next_round", "details": {"round": 6}}
+{"message": "engine.execution.task_complete", "details": {"round": 6, "node_id": "python-task-6", "status": "success"}}
+{"message": "engine.evaluation.report", "details": {"overall": "ok", "completed": 6, "truths": 1}}
+{"message": "engine.terminal.success", "details": {}}

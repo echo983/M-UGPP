@@ -78,7 +78,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--max-tasks-per-round",
         type=int,
-        default=20,
+        default=32,
         help="Number of tasks the worker can execute per round",
     )
     parser.add_argument(
@@ -106,6 +106,68 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Output the final report as JSON for automation",
     )
+    parser.add_argument(
+        "--task",
+        action="append",
+        default=[],
+        metavar="EXECUTOR:PAYLOAD",
+        help="Add an executable task (executor is 'bash' or 'python')",
+    )
+    parser.add_argument(
+        "--bash",
+        action="append",
+        default=[],
+        metavar="CMD",
+        help="Shortcut for adding a bash task (appended after --task entries)",
+    )
+    parser.add_argument(
+        "--python",
+        action="append",
+        default=[],
+        metavar="CODE",
+        help="Shortcut for adding a python task executed with `python -c`",
+    )
+    parser.add_argument(
+        "--workdir",
+        default=".",
+        help="Working directory used for all executable tasks",
+    )
+    parser.add_argument(
+        "--task-timeout",
+        type=float,
+        default=90.0,
+        help="Maximum seconds allowed for each task before timing out",
+    )
+    parser.add_argument(
+        "--log-file",
+        default=None,
+        help="Optional path to write JSONL logs for the run",
+    )
+    parser.add_argument(
+        "--no-gpt",
+        action="store_true",
+        help="Use local rule-based roles instead of GPT-powered roles",
+    )
+    parser.add_argument(
+        "--planner-model",
+        default=None,
+        help="Override GPT planner model (default gpt-5.1)",
+    )
+    parser.add_argument(
+        "--worker-model",
+        default=None,
+        help="Override GPT worker model (default gpt-5-mini)",
+    )
+    parser.add_argument(
+        "--discoverer-model",
+        default=None,
+        help="Override GPT discoverer model (default gpt-5-nano)",
+    )
+    parser.add_argument(
+        "--evaluator-model",
+        default=None,
+        help="Override GPT evaluator model (default gpt-5-mini)",
+    )
     return parser
 
 
@@ -123,14 +185,64 @@ def _build_initial_mts(goal: str, truths: Sequence[str], needs: Sequence[str]) -
     return mts
 
 
+def _parse_tasks(args: argparse.Namespace, parser: argparse.ArgumentParser) -> list[tuple[str, str]]:
+    tasks: list[tuple[str, str]] = []
+    for raw in args.task:
+        if ":" not in raw:
+            parser.error("Task must be formatted as 'bash:<command>' or 'python:<code>'")
+        executor, payload = raw.split(":", 1)
+        executor = executor.strip().lower()
+        if executor not in {"bash", "python"}:
+            parser.error("Task executor must be 'bash' or 'python'")
+        tasks.append((executor, payload))
+
+    for cmd in args.bash:
+        tasks.append(("bash", cmd))
+    for code in args.python:
+        tasks.append(("python", code))
+
+    return tasks
+
+
+def _model_overrides(args: argparse.Namespace) -> dict[str, str]:
+    models: dict[str, str] = {}
+    if args.planner_model:
+        models["planner"] = args.planner_model
+    if args.worker_model:
+        models["worker"] = args.worker_model
+    if args.discoverer_model:
+        models["discoverer"] = args.discoverer_model
+    if args.evaluator_model:
+        models["evaluator"] = args.evaluator_model
+    return models
+
+
 def run(goal: str, parser: argparse.ArgumentParser, args: argparse.Namespace) -> dict:
-    discoverer, planner, worker, evaluator = build_default_roles()
+    tasks = _parse_tasks(args, parser)
+    use_gpt = not args.no_gpt
+    model_overrides = _model_overrides(args)
+    discoverer, planner, worker, evaluator = build_default_roles(
+        tasks=tasks,
+        workdir=args.workdir,
+        use_gpt=use_gpt,
+        models=model_overrides or None,
+    )
     config = UGPPConfig(
         max_discovery_rounds=args.max_discovery_rounds,
         max_execution_rounds=args.max_execution_rounds,
         max_tasks_per_round=args.max_tasks_per_round,
         min_mts_confidence=args.min_mts_confidence,
+        task_timeout=args.task_timeout,
     )
+    log_file = args.log_file
+    log_handle = open(log_file, "a", encoding="utf-8") if log_file else None
+
+    def logger(message: str, details: dict | None = None) -> None:
+        if not log_handle:
+            return
+        record = {"message": message, "details": details or {}}
+        log_handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+        log_handle.flush()
 
     mts = _build_initial_mts(goal, args.truth, args.need)
     engine = UGPPEngine(
@@ -141,7 +253,7 @@ def run(goal: str, parser: argparse.ArgumentParser, args: argparse.Namespace) ->
         config=config,
     )
 
-    final_report = engine.run(goal, initial_mts=mts)
+    final_report = engine.run(goal, initial_mts=mts, log=logger)
     result = {
         "status": final_report.status.value,
         "message": final_report.message,
@@ -149,7 +261,11 @@ def run(goal: str, parser: argparse.ArgumentParser, args: argparse.Namespace) ->
         "completed": list(final_report.state.completed_nodes),
         "mts_truths": len(final_report.state.mts.truths),
         "mts_confidence": final_report.state.mts.confidence,
+        "tasks_requested": len(tasks),
+        "gpt_enabled": use_gpt,
     }
+    if log_handle:
+        log_handle.close()
 
     payload = json.dumps(result, indent=None if args.dump_json else 2)
 

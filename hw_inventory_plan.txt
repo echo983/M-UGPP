@@ -1,0 +1,1 @@
+Scope: CPU, memory, storage, motherboard/BIOS, GPUs, NICs, virtualization; Access: require root/admin; Collection: local; Output: ./hw_inventory_$(hostname)_$(date +%Y%m%d%H%M%S).txt

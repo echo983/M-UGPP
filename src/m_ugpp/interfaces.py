@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, Optional, Set
 
 from .types import MTS, Source, TaskNode, Truth, TruthNeed
@@ -22,6 +22,8 @@ class DiscoveryResult:
     new_truths: Set[Truth]
     confidence: float
     sources_used: Set[Source]
+    report: Optional[str] = None
+    artifacts: Dict[str, Any] = field(default_factory=dict)
 
 
 class Discoverer(ABC):
@@ -43,6 +45,7 @@ class PlanningResult:
     dag: DAG
     estimated_rounds: int
     confidence: float
+    plan_summary: Optional[str] = None
 
 
 class Planner(ABC):
@@ -65,6 +68,8 @@ class WorkerResult:
     artifacts: Dict[str, Any]
     execution_time: float
     error: Optional[str] = None
+    goal_met: Optional[bool] = None
+    new_facts: Dict[str, Any] = field(default_factory=dict)
 
 
 class Worker(ABC):
@@ -78,6 +83,9 @@ class EvalReport:
     overall: str
     details: Dict[str, Dict[str, Any]]
     recommendations: list[str]
+    accepted_nodes: Set[str] = field(default_factory=set)
+    risks: list[str] = field(default_factory=list)
+    new_truths: Set[Truth] = field(default_factory=set)
 
 
 class Evaluator(ABC):

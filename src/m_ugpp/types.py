@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable, Dict, FrozenSet, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Callable, Dict, FrozenSet, List, Optional, Set, Tuple
 
 
 class Phase(Enum):
@@ -95,14 +95,20 @@ class TaskNode:
     estimated_cost: float = 0.0
     status: str = "pending"
     metadata: Dict[str, Any] = field(default_factory=dict)
+    inputs: Dict[str, Any] = field(default_factory=dict)
+    expected_outputs: Dict[str, Any] = field(default_factory=dict)
+    resources: List[str] = field(default_factory=list)
+    failure_conditions: List[str] = field(default_factory=list)
+    parallelizable: bool = True
 
 
 @dataclass
 class UGPPConfig:
     max_discovery_rounds: int = 3
     max_execution_rounds: int = 10
-    max_tasks_per_round: int = 20
+    max_tasks_per_round: int = 32
     min_mts_confidence: float = 0.7
+    task_timeout: float = 90.0
 
 
 @dataclass
@@ -115,6 +121,7 @@ class UGPPState:
     results: Dict[str, Any] = field(default_factory=dict)
     completed_nodes: Set[str] = field(default_factory=set)
     status: Status = Status.RUNNING
+    discovery_report: Optional[str] = None
 
 
 @dataclass

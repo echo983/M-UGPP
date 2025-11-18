@@ -1,0 +1,2 @@
+[console_scripts]
+ugpp = m_ugpp.cli:main

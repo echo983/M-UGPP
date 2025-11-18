@@ -14,6 +14,7 @@ from .interfaces import (
     WorkerJob,
 )
 from .types import FinalReport, MTS, Phase, Status, UGPPConfig, UGPPState
+from .dag import DAG
 
 
 @dataclass
@@ -119,13 +120,21 @@ class UGPPEngine:
                             "max": cfg.max_execution_rounds,
                         },
                     )
-                    state.phase = Phase.TERMINAL
-                    state.status = Status.FAILURE
-                    return FinalReport(
-                        status=state.status,
-                        state=state,
-                        message="Planner estimated rounds exceed execution limit",
-                    )
+                    # Truncate tasks to fit execution budget
+                    if state.dag:
+                        state.dag.nodes = dict(list(planning_result.dag.nodes.items())[: cfg.max_execution_rounds])
+                        state.dag.edges = {
+                            (src, dst)
+                            for (src, dst) in planning_result.dag.edges
+                            if src in state.dag.nodes and dst in state.dag.nodes
+                        }
+                        planning_result.dag = state.dag
+                        planning_result.estimated_rounds = cfg.max_execution_rounds
+                    else:
+                        nodes_items = list(planning_result.dag.nodes.items())[: cfg.max_execution_rounds]
+                        node_ids = {nid for nid, _ in nodes_items}
+                        planning_result.dag = DAG(nodes=dict(nodes_items), edges={(s, d) for (s, d) in planning_result.dag.edges if s in node_ids and d in node_ids})
+                        planning_result.estimated_rounds = len(planning_result.dag.nodes)
 
                 if not planning_result.dag.is_acyclic():
                     _log("engine.planning.cycle_detected")
@@ -166,24 +175,32 @@ class UGPPEngine:
                     continue
 
                 selected_ids = list(ready_ids)[: cfg.max_tasks_per_round]
-                for node_id in selected_ids:
+                from concurrent.futures import ThreadPoolExecutor, as_completed
+
+                def _run(node_id: str) -> tuple[str, "WorkerResult"]:
                     node = state.dag.nodes[node_id]
                     assert node.type == "atomic"
-                    job = WorkerJob(node=node, context={}, timeout=60.0)
-                    worker_result = self.worker.execute(job)
-                    assert worker_result.node_id in state.dag.nodes
-                    state.results[node_id] = worker_result
-                    if worker_result.status == "success":
-                        state.completed_nodes.add(node_id)
+                    job = WorkerJob(node=node, context={}, timeout=self.config.task_timeout)
+                    result = self.worker.execute(job)
+                    return node_id, result
 
-                    _log(
-                        "engine.execution.task_complete",
-                        {
-                            "round": state.round,
-                            "node_id": node_id,
-                            "status": worker_result.status,
-                        },
-                    )
+                with ThreadPoolExecutor(max_workers=cfg.max_tasks_per_round) as pool:
+                    futures = {pool.submit(_run, nid): nid for nid in selected_ids}
+                    for future in as_completed(futures):
+                        node_id, worker_result = future.result()
+                        assert worker_result.node_id in state.dag.nodes
+                        state.results[node_id] = worker_result
+                        if worker_result.status == "success":
+                            state.completed_nodes.add(node_id)
+
+                        _log(
+                            "engine.execution.task_complete",
+                            {
+                                "round": state.round,
+                                "node_id": node_id,
+                                "status": worker_result.status,
+                            },
+                        )
 
                 state.phase = Phase.EVALUATION
                 continue

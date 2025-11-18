@@ -1,3 +1,13 @@
+Metadata-Version: 2.4
+Name: m-ugpp
+Version: 0.1.0
+Summary: Minimal UGPP engine with runnable demo roles and CLI
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: flask>=3.0.0
+Requires-Dist: openai>=1.43.0
+Provides-Extra: dev
+
 # Minimal UGPP Demo
 
 This repository contains a runnable, minimal implementation of the UGPP (Understanding, Guidance, Planning, Production) engine with simple role implementations and a CLI entrypoint.
